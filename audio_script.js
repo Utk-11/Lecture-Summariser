@@ -27,8 +27,18 @@ btn.addEventListener('click', async () => {
         const data = await res.json();
         
         if (res.ok) {
-            output.innerHTML = data.analysis;
+            // 🚀 Run the raw response text through the Markdown parser
+            output.innerHTML = marked.parse(data.analysis);
             resultBox.classList.remove('hidden');
+            
+            // 🚀 Automatically render all the LaTeX math equations perfectly
+            renderMathInElement(output, {
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
+            });
         } else {
             alert(data.error || 'Something went wrong.');
         }
