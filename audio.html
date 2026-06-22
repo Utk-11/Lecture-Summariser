@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lecture Summarizer</title>
+    <link rel="stylesheet" href="audio_style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="upload-box">
+            <h2>Lecture Summarizer</h2>
+            
+            <div class="field">
+                <label>Select Audio (.mp3 / .wav)</label>
+                <input type="file" id="audioFile" accept="audio/*">
+            </div>
+
+            <div class="field">
+                <label>Translate to</label>
+                <select id="langSelect">
+                    <option value="Hindi">Hindi</option>
+                    <option value="Tamil">Tamil</option>
+                    <option value="Telugu">Telugu</option>
+                    <option value="Spanish">Spanish</option>
+                </select>
+            </div>
+
+            <button id="submitBtn">Generate Notes</button>
+        </div>
+
+        <div id="loader" class="hidden">Processing file... please wait.</div>
+
+        <div id="resultBox" class="hidden">
+            <h3>Study Guide</h3>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script src="audio_script.js"></script>
+</body>
+</html>
