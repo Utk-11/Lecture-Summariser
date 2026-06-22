@@ -1,29 +1,39 @@
 import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS  # type: ignore
 from google import genai
+import tempfile
 
 app = Flask(__name__)
-CORS(app)
+# allow cors for live server port
+CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500"}})
 
 @app.route("/process_audio", methods=["POST"])
 def handle_audio():
+    print("Received a request...")
+    
     if "audio" not in request.files:
+        print("Error: No audio file found in request")
         return jsonify({"error": "No file uploaded"}), 400
         
     file = request.files["audio"]
     target_lang = request.form.get("language", "Hindi")
     
     if file.filename == "":
+        print("Error: Blank filename")
         return jsonify({"error": "Filename is empty"}), 400
 
-    # Save locally to send to the API
-    temp_name = f"temp_{file.filename}"
-    file.save(temp_name)
+    # saving to mac system temp folder so live server stops refreshing the page
+    temp_dir = tempfile.gettempdir()
+    temp_path = os.path.join(temp_dir, f"temp_{file.filename}")
+    file.save(temp_path)
+    print(f"Saved file locally to: {temp_path}")
 
     try:
+        # gemini api setup
         client = genai.Client()
-        upload = client.files.upload(file=temp_name)
+        print("Uploading file to gemini...")
+        audio_upload = client.files.upload(file=temp_path)
         
         prompt = f"""
         You are an elite university engineering professor and technical translator.
@@ -37,22 +47,29 @@ def handle_audio():
         2. Key Terms and Formulas (Keep formulas in mathematical text format, but explain the definitions in {target_lang}).
         """
         
+        print("Generating notes from model...")
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=[upload, prompt]
+            contents=[audio_upload, prompt]
         )
         
-        client.files.delete(name=upload.name)
+        # delete from cloud storage
+        client.files.delete(name=audio_upload.name)
+        print("Deleted cloud file.")
         
-        formatted_html = response.text.replace("\n", "<br>")
-        return jsonify({"analysis": formatted_html})
+        # return clean markdown back to marked.js
+        return jsonify({"analysis": response.text})
         
     except Exception as e:
+        print(f"Something went wrong: {str(e)}")
         return jsonify({"error": str(e)}), 500
         
     finally:
-        if os.path.exists(temp_name):
-            os.remove(temp_name)
+        # clean up the temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            print("Cleaned up local temp file.")
 
 if __name__ == "__main__":
-    app.run(port=5001)
+    # running on port 5001
+    app.run(port=5001, debug=True)
